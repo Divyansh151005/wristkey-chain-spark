@@ -15,7 +15,12 @@ import {
   Download,
   Eye,
   Lock,
-  Unlock
+  Unlock,
+  Scan,
+  AlertTriangle,
+  Wifi,
+  Settings,
+  Radio
 } from "lucide-react";
 
 interface Feature {
@@ -82,8 +87,11 @@ export const DemoFeatures = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isMobile, setIsMobile] = useState(false);
   const [biometricStep, setBiometricStep] = useState(0);
+  const [biometricProgress, setBiometricProgress] = useState(0);
   const [isSecurityDemo, setIsSecurityDemo] = useState(false);
   const [faucetLoading, setFaucetLoading] = useState(false);
+  const [multiChainDemo, setMultiChainDemo] = useState(false);
+  const [ccipDemo, setCcipDemo] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -137,14 +145,60 @@ export const DemoFeatures = () => {
 
   const handleBiometric = async () => {
     setBiometricStep(1);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    setBiometricProgress(0);
+    
+    // Realistic scanning simulation
+    for (let i = 0; i <= 100; i += 10) {
+      setBiometricProgress(i);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     setBiometricStep(2);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Random chance for failure/retry to make it more realistic
+    if (Math.random() > 0.8) {
+      setBiometricStep(4); // Failed state
+      toast({
+        title: "Biometric Scan Failed",
+        description: "Please try again. Ensure your finger covers the sensor completely.",
+      });
+      setTimeout(() => {
+        setBiometricStep(0);
+        setBiometricProgress(0);
+      }, 2000);
+      return;
+    }
+    
     setBiometricStep(3);
-    setTimeout(() => setBiometricStep(0), 2000);
     toast({
-      title: "Biometric Authentication Demo",
-      description: "Fingerprint scan simulation completed successfully!",
+      title: "Biometric Authentication Successful",
+      description: "Fingerprint verified! Access granted to secure features.",
+    });
+    
+    setTimeout(() => {
+      setBiometricStep(0);
+      setBiometricProgress(0);
+    }, 2000);
+  };
+
+  const handleMultiChain = async () => {
+    setMultiChainDemo(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setMultiChainDemo(false);
+    toast({
+      title: "Multi-Chain Bridge Active",
+      description: "Connected to Ethereum, Polygon, and Solana networks successfully!",
+    });
+  };
+
+  const handleCCIP = async () => {
+    setCcipDemo(true);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    setCcipDemo(false);
+    toast({
+      title: "CCIP Message Sent",
+      description: "Cross-chain message delivered via Chainlink CCIP protocol!",
     });
   };
 
@@ -186,17 +240,52 @@ export const DemoFeatures = () => {
         );
       case "biometric":
         return (
+          <div className="mt-2 space-y-2">
+            <Button 
+              size="sm" 
+              onClick={handleBiometric} 
+              disabled={biometricStep > 0}
+              className="w-full"
+            >
+              <Fingerprint className="h-3 w-3 mr-1" />
+              {biometricStep === 0 && "Try Biometric Scan"}
+              {biometricStep === 1 && `Scanning... ${biometricProgress}%`}
+              {biometricStep === 2 && "Verifying..."}
+              {biometricStep === 3 && "Authenticated!"}
+              {biometricStep === 4 && "Scan Failed"}
+            </Button>
+            {biometricStep === 1 && (
+              <div className="w-full bg-muted/50 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-100"
+                  style={{ width: `${biometricProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
+        );
+      case "multi-chain":
+        return (
           <Button 
             size="sm" 
-            onClick={handleBiometric} 
-            disabled={biometricStep > 0}
+            onClick={handleMultiChain} 
+            disabled={multiChainDemo}
             className="mt-2 w-full"
           >
-            <Fingerprint className="h-3 w-3 mr-1" />
-            {biometricStep === 0 && "Try Biometric Demo"}
-            {biometricStep === 1 && "Scanning..."}
-            {biometricStep === 2 && "Verifying..."}
-            {biometricStep === 3 && "Authenticated!"}
+            <Globe className="h-3 w-3 mr-1" />
+            {multiChainDemo ? "Connecting..." : "Test Multi-Chain"}
+          </Button>
+        );
+      case "ccip":
+        return (
+          <Button 
+            size="sm" 
+            onClick={handleCCIP} 
+            disabled={ccipDemo}
+            className="mt-2 w-full"
+          >
+            <Zap className="h-3 w-3 mr-1" />
+            {ccipDemo ? "Sending CCIP..." : "Test CCIP Message"}
           </Button>
         );
       case "non-custodial":
@@ -217,13 +306,76 @@ export const DemoFeatures = () => {
             onClick={handleSMSDemo}
             className="mt-2 w-full"
           >
-            <Eye className="h-3 w-3 mr-1" />
+            <Radio className="h-3 w-3 mr-1" />
             Test SMS Detection
           </Button>
         );
       default:
         return null;
     }
+  };
+
+  const getFeatureDemo = (featureId: string) => {
+    switch (featureId) {
+      case "multi-chain":
+        if (multiChainDemo) {
+          return (
+            <div className="mt-3 p-3 bg-primary/10 rounded-md border border-primary/20">
+              <div className="flex items-center space-x-2 mb-2">
+                <Wifi className="h-3 w-3 text-primary animate-pulse" />
+                <span className="text-xs text-primary font-semibold">Multi-Chain Bridge Active</span>
+              </div>
+              <div className="space-y-1 text-[10px]">
+                <div className="flex justify-between">
+                  <span>Ethereum:</span>
+                  <span className="text-accent">✓ Connected</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Polygon:</span>
+                  <span className="text-accent">✓ Connected</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Solana:</span>
+                  <span className="text-accent">✓ Connected</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case "ccip":
+        if (ccipDemo) {
+          return (
+            <div className="mt-3 p-3 bg-primary/10 rounded-md border border-primary/20">
+              <div className="flex items-center space-x-2 mb-2">
+                <Zap className="h-3 w-3 text-primary animate-pulse" />
+                <span className="text-xs text-primary font-semibold">CCIP Transaction</span>
+              </div>
+              <div className="text-[10px] space-y-1">
+                <div>Source: Ethereum Goerli</div>
+                <div>Destination: Polygon Mumbai</div>
+                <div>Status: Processing...</div>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case "sms":
+        return (
+          <div className="mt-3 p-3 bg-muted/20 rounded-md border border-border/20">
+            <div className="flex items-center space-x-2 mb-2">
+              <Smartphone className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs font-semibold">Device Info</span>
+            </div>
+            <div className="text-[10px] space-y-1">
+              <div>Device: {isMobile ? "Mobile Detected" : "Desktop"}</div>
+              <div>SMS Support: {isMobile ? "Available" : "N/A"}</div>
+              <div>Platform: {navigator.platform}</div>
+            </div>
+          </div>
+        );
+    }
+    return null;
   };
 
   return (
@@ -282,6 +434,7 @@ export const DemoFeatures = () => {
                     </Badge>
                   </div>
                   {getFeatureAction(feature.id)}
+                  {getFeatureDemo(feature.id)}
                   
                   {/* Security Demo Visualization */}
                   {feature.id === "non-custodial" && isSecurityDemo && (
