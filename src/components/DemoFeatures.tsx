@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Smartphone, 
   Fingerprint, 
@@ -10,7 +11,11 @@ import {
   Globe, 
   Coins,
   CheckCircle,
-  Clock
+  Clock,
+  Download,
+  Eye,
+  Lock,
+  Unlock
 } from "lucide-react";
 
 interface Feature {
@@ -75,6 +80,18 @@ const features: Feature[] = [
 
 export const DemoFeatures = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isMobile, setIsMobile] = useState(false);
+  const [biometricStep, setBiometricStep] = useState(0);
+  const [isSecurityDemo, setIsSecurityDemo] = useState(false);
+  const [faucetLoading, setFaucetLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    checkMobile();
+  }, []);
   
   const categories = ["All", ...Array.from(new Set(features.map(f => f.category)))];
   
@@ -103,6 +120,107 @@ export const DemoFeatures = () => {
         return <Clock className="h-4 w-4 text-primary" />;
       case "coming-soon":
         return <Clock className="h-4 w-4 text-muted-foreground" />;
+      default:
+        return null;
+    }
+  };
+
+  const handleFaucet = async () => {
+    setFaucetLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setFaucetLoading(false);
+    toast({
+      title: "Testnet Tokens Received!",
+      description: "100 ETH, 100 MATIC, and 100 SOL have been added to your demo wallet.",
+    });
+  };
+
+  const handleBiometric = async () => {
+    setBiometricStep(1);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setBiometricStep(2);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setBiometricStep(3);
+    setTimeout(() => setBiometricStep(0), 2000);
+    toast({
+      title: "Biometric Authentication Demo",
+      description: "Fingerprint scan simulation completed successfully!",
+    });
+  };
+
+  const handleSecurityDemo = () => {
+    setIsSecurityDemo(!isSecurityDemo);
+    toast({
+      title: isSecurityDemo ? "Security Demo Disabled" : "Security Demo Enabled",
+      description: isSecurityDemo ? "Private keys are now visible" : "Private keys are now encrypted and hidden",
+    });
+  };
+
+  const handleSMSDemo = () => {
+    if (isMobile) {
+      toast({
+        title: "Mobile Device Detected!",
+        description: "Solana Mobile Stack would integrate natively on this device.",
+      });
+    } else {
+      toast({
+        title: "Desktop Detected",
+        description: "SMS features work best on mobile devices. Try visiting on a phone!",
+      });
+    }
+  };
+
+  const getFeatureAction = (featureId: string) => {
+    switch (featureId) {
+      case "testnet-faucet":
+        return (
+          <Button 
+            size="sm" 
+            onClick={handleFaucet} 
+            disabled={faucetLoading}
+            className="mt-2 w-full"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            {faucetLoading ? "Getting Tokens..." : "Get Testnet Tokens"}
+          </Button>
+        );
+      case "biometric":
+        return (
+          <Button 
+            size="sm" 
+            onClick={handleBiometric} 
+            disabled={biometricStep > 0}
+            className="mt-2 w-full"
+          >
+            <Fingerprint className="h-3 w-3 mr-1" />
+            {biometricStep === 0 && "Try Biometric Demo"}
+            {biometricStep === 1 && "Scanning..."}
+            {biometricStep === 2 && "Verifying..."}
+            {biometricStep === 3 && "Authenticated!"}
+          </Button>
+        );
+      case "non-custodial":
+        return (
+          <Button 
+            size="sm" 
+            onClick={handleSecurityDemo}
+            className="mt-2 w-full"
+          >
+            {isSecurityDemo ? <Unlock className="h-3 w-3 mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
+            {isSecurityDemo ? "Hide Keys" : "Show Security"}
+          </Button>
+        );
+      case "sms":
+        return (
+          <Button 
+            size="sm" 
+            onClick={handleSMSDemo}
+            className="mt-2 w-full"
+          >
+            <Eye className="h-3 w-3 mr-1" />
+            Test SMS Detection
+          </Button>
+        );
       default:
         return null;
     }
@@ -157,10 +275,31 @@ export const DemoFeatures = () => {
                   {feature.description}
                 </p>
                 
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    {feature.category}
-                  </Badge>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-xs">
+                      {feature.category}
+                    </Badge>
+                  </div>
+                  {getFeatureAction(feature.id)}
+                  
+                  {/* Security Demo Visualization */}
+                  {feature.id === "non-custodial" && isSecurityDemo && (
+                    <div className="mt-3 p-3 bg-primary/10 rounded-md border border-primary/20">
+                      <div className="text-xs font-mono">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-muted-foreground">Private Key:</span>
+                          <Lock className="h-3 w-3 text-primary" />
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded text-[10px] break-all">
+                          0x742d35Cc6543C068Bc123456789abcdef0123456...
+                        </div>
+                        <p className="text-[10px] text-primary mt-1">
+                          ✓ Encrypted with AES-256 • Stored locally only
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
